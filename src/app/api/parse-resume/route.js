@@ -3,7 +3,6 @@ import { createRequire } from "module";
 import path from "path";
 import fs from "fs";
 import { pathToFileURL } from "url";
-import { PDFParse } from "pdf-parse";
 import { parseResumeText } from "../../../lib/pdfResumeParser";
 
 const require = createRequire(import.meta.url);
@@ -11,7 +10,18 @@ const require = createRequire(import.meta.url);
 /** Mesma versão do pdf-parse em package.json — CDN só como fallback. */
 const PDF_PARSE_PKG_VERSION = "2.4.5";
 
-function configurePdfWorker() {
+/**
+ * pdf.js (via pdf-parse) usa DOMMatrix no Node; na Vercel não existe sem polyfill.
+ * Precisa rodar ANTES de importar `pdf-parse` (por isso import dinâmico abaixo).
+ */
+function ensureDomMatrixPolyfill() {
+  if (typeof globalThis.DOMMatrix !== "undefined") return;
+  const mod = require("dommatrix");
+  const DOMMatrixImpl = mod.default ?? mod;
+  globalThis.DOMMatrix = DOMMatrixImpl;
+}
+
+function configurePdfWorker(PDFParse) {
   try {
     const pkgPath = require.resolve("pdfjs-dist/package.json");
     const root = path.dirname(pkgPath);
@@ -30,7 +40,9 @@ function configurePdfWorker() {
 
 export async function POST(req) {
   try {
-    configurePdfWorker();
+    ensureDomMatrixPolyfill();
+    const { PDFParse } = await import("pdf-parse");
+    configurePdfWorker(PDFParse);
 
     const formData = await req.formData();
     const file = formData.get("file") ?? formData.get("resume");
