@@ -38,6 +38,22 @@ const labelClass = "mb-1.5 block text-sm font-medium text-slate-700";
 const cardClass = "rounded-2xl border border-slate-200 bg-white p-6 shadow-sm";
 const sectionTitleClass = "mb-4 text-base font-semibold text-slate-900";
 
+/** Evita `Unexpected token '<'` quando a API devolve HTML de erro (ex.: 500 na Vercel). */
+async function readJsonFromApi(res) {
+  const raw = await res.text();
+  const ct = res.headers.get("content-type") || "";
+  if (!ct.includes("application/json")) {
+    throw new Error(
+      `Erro ${res.status} no servidor (a resposta não é JSON — em geral página de erro HTML). Confira os logs da função na Vercel.`
+    );
+  }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new Error("Resposta inválida do servidor (não é JSON).");
+  }
+}
+
 export default function Home() {
   const [tab, setTab] = useState("gerar"); // "gerar" | "analisar"
 
@@ -153,7 +169,7 @@ export default function Home() {
         method: "POST",
         body: formData,
       });
-      const data = await res.json();
+      const data = await readJsonFromApi(res);
       if (!res.ok) throw new Error(data.error || "Falha ao ler o PDF.");
       setCandidate((prev) => ({
         ...prev,
@@ -206,7 +222,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
+      const data = await readJsonFromApi(res);
       if (!res.ok) throw new Error(data.error || "Erro ao gerar currículo");
       setResult(data);
     } catch (err) {
@@ -229,7 +245,7 @@ export default function Home() {
     formData.append("file", file);
     try {
       const res = await fetch("/api/parse-resume", { method: "POST", body: formData });
-      const data = await res.json();
+      const data = await readJsonFromApi(res);
       if (!res.ok) throw new Error(data.error || "Falha ao ler o PDF.");
       const text = [
         data.candidate?.name,
@@ -265,7 +281,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resumeText: text, jobDescription: jd }),
       });
-      const data = await res.json();
+      const data = await readJsonFromApi(res);
       if (!res.ok) throw new Error(data.error || "Falha ao analisar.");
       setAnalyzeResult(data);
     } catch (err) {
