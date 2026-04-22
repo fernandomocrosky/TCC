@@ -7,8 +7,17 @@ import { parseResumeText } from "../../../lib/pdfResumeParser";
 
 const require = createRequire(import.meta.url);
 
-/** Mesma versão do pdf-parse em package.json — CDN só como fallback. */
-const PDF_PARSE_PKG_VERSION = "2.4.5";
+/**
+ * Worker empacotado no repositório (public/workers). Na Vercel, ficheiros em
+ * node_modules nem sempre existem no runtime; public/ vai sempre no deploy.
+ * Após atualizar pdfjs-dist: `npm run sync-pdf-worker`
+ */
+const BUNDLED_WORKER = path.join(
+  process.cwd(),
+  "public",
+  "workers",
+  "pdf.worker.mjs"
+);
 
 /**
  * pdf.js (via pdf-parse) usa DOMMatrix no Node; na Vercel não existe sem polyfill.
@@ -21,21 +30,32 @@ function ensureDomMatrixPolyfill() {
   globalThis.DOMMatrix = DOMMatrixImpl;
 }
 
+/**
+ * No Node, o worker do PDF.js precisa ser `file:` (ou `data:`), nunca `https:`.
+ */
 function configurePdfWorker(PDFParse) {
-  try {
-    const pkgPath = require.resolve("pdfjs-dist/package.json");
-    const root = path.dirname(pkgPath);
-    const workerAbs = path.join(root, "legacy", "build", "pdf.worker.mjs");
-    if (fs.existsSync(workerAbs)) {
-      PDFParse.setWorker(pathToFileURL(workerAbs).href);
-      return;
+  let workerAbs = null;
+
+  if (fs.existsSync(BUNDLED_WORKER)) {
+    workerAbs = BUNDLED_WORKER;
+  } else {
+    try {
+      const resolved = require.resolve(
+        "pdfjs-dist/legacy/build/pdf.worker.mjs"
+      );
+      if (fs.existsSync(resolved)) workerAbs = resolved;
+    } catch {
+      /* ignora */
     }
-  } catch (e) {
-    console.warn("[parse-resume] worker local indisponível:", e?.message);
   }
-  PDFParse.setWorker(
-    `https://cdn.jsdelivr.net/npm/pdf-parse@${PDF_PARSE_PKG_VERSION}/dist/pdf-parse/web/pdf.worker.mjs`
-  );
+
+  if (!workerAbs) {
+    throw new Error(
+      "Worker do PDF não encontrado. Execute `npm run sync-pdf-worker`, faça commit de `public/workers/pdf.worker.mjs` e redeploy."
+    );
+  }
+
+  PDFParse.setWorker(pathToFileURL(workerAbs).href);
 }
 
 export async function POST(req) {
