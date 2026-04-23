@@ -55,7 +55,7 @@ async function readJsonFromApi(res) {
 }
 
 export default function Home() {
-  const [tab, setTab] = useState("gerar"); // "gerar" | "analisar"
+  const [tab, setTab] = useState("gerar"); // "gerar" | "analisar" | "feedback"
 
   // Estado do fluxo "Gerar currículo"
   const [candidate, setCandidate] = useState(emptyCandidate());
@@ -327,6 +327,17 @@ export default function Home() {
               }`}
             >
               Analisar currículo
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("feedback")}
+              className={`rounded-md px-4 py-2 text-sm font-medium transition ${
+                tab === "feedback"
+                  ? "bg-white text-slate-900 shadow"
+                  : "text-slate-600 hover:text-slate-900"
+              }`}
+            >
+              Feedback
             </button>
           </nav>
         </div>
@@ -614,6 +625,43 @@ export default function Home() {
                 </div>
               </section>
             )}
+          </>
+        )}
+
+        {tab === "feedback" && (
+          <>
+            <div className="mb-6 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-cyan-50 p-6 shadow-sm">
+              <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-3 py-1 text-xs font-medium text-indigo-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                CVForge Feedback
+              </div>
+              <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Feedback</h1>
+              <p className="mt-1 text-sm text-slate-600 sm:text-base">
+                Responda o formulário abaixo.
+              </p>
+            </div>
+
+            <section className={`${cardClass} p-4 sm:p-6`}>
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-slate-700 sm:text-base">
+                  Formulário de feedback
+                </h2>
+                <span className="text-xs text-slate-500">Leva menos de 2 minutos</span>
+              </div>
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-inner">
+                <iframe
+                  src="https://docs.google.com/forms/d/e/1FAIpQLSft_OEdoR5QoD72SvpxyI2CtVdFHgEh4DO8jh6wYuKfIJhHRA/viewform?embedded=true"
+                  width="100%"
+                  height="1269"
+                  frameBorder="0"
+                  marginHeight="0"
+                  marginWidth="0"
+                  title="Formulário de feedback do CVForge"
+                >
+                  Carregando...
+                </iframe>
+              </div>
+            </section>
           </>
         )}
 
