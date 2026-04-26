@@ -69,8 +69,6 @@ textarea:disabled {
   @apply rounded-lg px-3 py-1.5 text-sm font-medium text-red-600 transition hover:bg-red-50 hover:text-red-700;
 }
 
-.resume-result pre {
-  @apply max-h-[70vh] overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-5 text-sm leading-relaxed text-slate-800;
-  white-space: pre-wrap;
+.resume-result .resume-markdown-content {
   word-break: break-word;
 }

@@ -22,7 +22,7 @@ export async function POST(req) {
       jobDescription,
     };
 
-    const analysis = analyzeResume(input, resumeText);
+    const analysis = await analyzeResume(input, resumeText);
     return NextResponse.json({ analysis });
   } catch (err) {
     console.error("Erro ao analisar currículo:", err);

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { jsPDF } from "jspdf";
+import { ResumeMarkdown } from "../components/ResumeMarkdown";
 
 const emptyCandidate = () => ({
   name: "",
@@ -86,26 +87,78 @@ export default function Home() {
     }
   }, [result, analyzeResult]);
 
-  function downloadResumePdf(text) {
-    if (!text || !text.trim()) return;
+  function stripMarkdownInline(s) {
+    return String(s || "")
+      .replace(/\*\*(.+?)\*\*/g, "$1")
+      .replace(/\*(.+?)\*/g, "$1");
+  }
+
+  /** PDF simples a partir de Markdown (títulos ##/###, bullets -). */
+  function downloadResumePdf(markdown) {
+    if (!markdown || !markdown.trim()) return;
+    let text = markdown.trim();
+    if (text.startsWith("```")) {
+      text = text.replace(/^```[a-z0-9]*\s*\n?/i, "").replace(/\n```\s*$/i, "").trim();
+    }
+
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const margin = 20;
+    const pageHeight = doc.internal.pageSize.getHeight();
     const maxWidth = doc.internal.pageSize.getWidth() - margin * 2;
     const lineHeight = 6;
+    const lineHeightHeading = 7;
     let y = margin;
-    const paragraphs = text.split(/\n/);
+
+    const rows = text.split(/\n/);
     doc.setFontSize(11);
-    for (const paragraph of paragraphs) {
-      const lines = doc.splitTextToSize(paragraph || " ", maxWidth);
+
+    for (const raw of rows) {
+      const trimmed = raw.trim();
+      if (!trimmed) {
+        y += lineHeight * 0.45;
+        continue;
+      }
+
+      let indent = 0;
+      let content = trimmed;
+      let heading = 0;
+
+      if (trimmed.startsWith("### ")) {
+        heading = 3;
+        content = trimmed.slice(4);
+      } else if (trimmed.startsWith("## ")) {
+        heading = 2;
+        content = trimmed.slice(3);
+      } else if (trimmed.startsWith("# ")) {
+        heading = 1;
+        content = trimmed.slice(2);
+      } else if (/^[-*]\s+/.test(trimmed)) {
+        indent = 5;
+        content = `• ${trimmed.replace(/^[-*]\s+/, "")}`;
+      }
+
+      content = stripMarkdownInline(content);
+
+      const fontSize =
+        heading === 1 ? 13 : heading === 2 ? 11.5 : heading === 3 ? 10.5 : 11;
+      doc.setFontSize(fontSize);
+      doc.setFont("helvetica", heading > 0 ? "bold" : "normal");
+
+      const wrapWidth = maxWidth - indent;
+      const lines = doc.splitTextToSize(content || " ", wrapWidth);
       for (const line of lines) {
-        if (y > doc.internal.pageSize.getHeight() - margin) {
+        if (y > pageHeight - margin) {
           doc.addPage();
           y = margin;
         }
-        doc.text(line, margin, y);
-        y += lineHeight;
+        doc.text(line, margin + indent, y);
+        y += heading > 0 ? lineHeightHeading : lineHeight;
       }
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
     }
+
     doc.save("curriculo.pdf");
   }
 
@@ -540,7 +593,7 @@ export default function Home() {
                         Download PDF
                       </button>
                     </div>
-                    <pre>{result.text}</pre>
+                    <ResumeMarkdown>{result.text}</ResumeMarkdown>
                   </div>
                   <div className="flex shrink-0 flex-col gap-4 lg:w-[300px]">
                     <h3 className="text-sm font-semibold text-slate-700">Análise ATS</h3>

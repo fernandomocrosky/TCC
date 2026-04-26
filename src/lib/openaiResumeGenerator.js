@@ -1,5 +1,5 @@
 /**
- * Gera texto de currículo personalizado para a vaga usando a API da OpenAI.
+ * Gera/refina texto de currículo usando a API da OpenAI.
  * Requer OPENAI_API_KEY em .env.local
  */
 
@@ -58,18 +58,30 @@ ${edu
   const hasSkills = skills.length > 0;
   const hasLanguages = languages.length > 0;
 
-  return `Você é um especialista em redação de currículos para processos seletivos. Gere um currículo em texto puro (sem markdown, sem asteriscos), otimizado para a vaga abaixo e para sistemas ATS.
+  return `Você é um especialista em redação de currículos para processos seletivos. Gere um currículo otimizado para a vaga e para ATS, em **Markdown** (para leitura humana na tela).
 
-REGRAS OBRIGATÓRIAS:
+FORMATO OBRIGATÓRIO (Markdown):
+1) Use \`##\` para cada bloco principal, com título curto em português, por exemplo: \`## Contato\`, \`## Resumo profissional\`, \`## Experiência profissional\`, \`## Formação acadêmica\`, \`## Habilidades técnicas\`, \`## Idiomas\`. Inclua somente seções que tenham dados.
+2) Logo após o título do documento: linha com **Nome completo** e, na linha seguinte, cargo desejado em negrito se existir (ex.: **Desenvolvedor Back-End**).
+3) Em **Contato**, NÃO use lista. Escreva linhas separadas com rótulo em negrito (ex.: **E-mail:** ..., **Telefone:** ..., **Localização:** ..., **LinkedIn:** ...). Use quebra de linha entre os campos.
+4) **Resumo**: NÃO use lista. Escreva um parágrafo único curto e objetivo (2–5 frases), sem bullets.
+5) **Experiência**: para cada cargo, use \`### Empresa — Cargo (período)\` e abaixo bullets com responsabilidades/conquistas (texto derivado da descrição fornecida). Sem parágrafos longos em experiência.
+6) **Formação**: bullets, um curso/instituição por item.
+7) **Habilidades**: organize por **subcategorias** com negrito dentro dos itens, por exemplo:
+   - **Linguagens & runtime:** Node.js, …
+   - **Dados:** PostgreSQL, …
+   Use apenas habilidades presentes nos dados; se não der para agrupar, use uma lista única de bullets.
+8) **Idiomas**: bullets (ex.: **Português** — nativo).
+9) Não use cercas de código (\`\`\`). Não use tabelas HTML. Texto em português. Sem introdução (“Segue o currículo”) nem comentários finais.
+
+REGRAS DE CONTEÚDO:
 1. Use APENAS os dados fornecidos abaixo. NUNCA invente ou use placeholders como [Nome da Instituição], [Curso], [Data], [Nome da Empresa], [Cargo], etc.
 2. Inclua SOMENTE as seções para as quais há dados:
-   - RESUMO/SUMMARY: só se o candidato tiver resumo.
-   - EXPERIÊNCIA/EXPERIENCE: só se houver experiências listadas abaixo (${hasExperience ? "há experiências" : "NÃO há — não inclua esta seção"}).
-   - FORMAÇÃO/EDUCATION: só se houver formação listada abaixo (${hasEducation ? "há formação" : "NÃO há — não inclua esta seção"}).
-   - HABILIDADES/SKILLS: só se houver habilidades listadas (${hasSkills ? "há habilidades" : "NÃO há — não inclua esta seção"}).
-   - IDIOMAS/LANGUAGES: só se houver idiomas listados (${hasLanguages ? "há idiomas" : "NÃO há — não inclua esta seção"}).
-3. No topo: nome, título (se houver), e uma linha de contato com os dados reais (localização, e-mail, telefone, LinkedIn, GitHub, website — apenas os que forem fornecidos).
-4. Use apenas quebras de linha. Seções em MAIÚSCULAS. Texto em português. Sem introdução ou comentários.
+   - Resumo: só se o candidato tiver resumo.
+   - Experiência: só se houver experiências (${hasExperience ? "há experiências" : "NÃO há — não inclua esta seção"}).
+   - Formação: só se houver formação (${hasEducation ? "há formação" : "NÃO há — não inclua esta seção"}).
+   - Habilidades: só se houver habilidades (${hasSkills ? "há habilidades" : "NÃO há — não inclua esta seção"}).
+   - Idiomas: só se houver idiomas (${hasLanguages ? "há idiomas" : "NÃO há — não inclua esta seção"}).
 
 DADOS DO CANDIDATO (use apenas isto):
 ${candidateBlock}
@@ -81,10 +93,10 @@ ${languagesBlock}
 DESCRIÇÃO DA VAGA:
 ${jd}
 
-Gere apenas o texto do currículo.`;
+Gere apenas o Markdown do currículo.`;
 }
 
-export async function generateResumeWithOpenAI(input) {
+async function requestOpenAIResume(prompt, { temperature = 0.5, maxTokens = 2000 } = {}) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey || !apiKey.trim()) {
     return null;
@@ -101,11 +113,11 @@ export async function generateResumeWithOpenAI(input) {
       messages: [
         {
           role: "user",
-          content: buildPrompt(input),
+          content: prompt,
         },
       ],
-      temperature: 0.5,
-      max_tokens: 2000,
+      temperature,
+      max_tokens: maxTokens,
     }),
   });
 
@@ -117,4 +129,39 @@ export async function generateResumeWithOpenAI(input) {
   const data = await response.json();
   const text = data.choices?.[0]?.message?.content?.trim();
   return text || null;
+}
+
+export async function generateResumeWithOpenAI(input) {
+  return requestOpenAIResume(buildPrompt(input), { temperature: 0.5, maxTokens: 2000 });
+}
+
+function buildRefinementPrompt(input, currentResumeText, suggestions) {
+  const safeSuggestions = Array.isArray(suggestions) ? suggestions.filter(Boolean) : [];
+  return `Você é um especialista em ATS e redação de currículos.
+Revise o currículo abaixo aplicando as sugestões de melhoria, mas seguindo regras rígidas:
+
+REGRAS OBRIGATÓRIAS:
+1. Não invente dados, empresas, datas, cursos, certificações ou resultados.
+2. Use apenas informações já presentes no currículo atual e nos dados do candidato.
+3. Mantenha o mesmo formato **Markdown** da versão inicial: títulos \`##\`, \`###\` para cada experiência, contato em linhas com rótulos (**E-mail:**, **Telefone:** etc.), resumo em parágrafo (sem lista), e subcategorias em **negrito** em habilidades quando fizer sentido.
+4. Preserve o idioma em português.
+5. Se alguma sugestão exigir dado inexistente, ignore essa sugestão.
+6. Não use cercas \`\`\` nem tabelas.
+
+DADOS DO CANDIDATO:
+${JSON.stringify(input || {}, null, 2)}
+
+CURRÍCULO ATUAL:
+${currentResumeText || ""}
+
+SUGESTÕES DE MELHORIA:
+${safeSuggestions.length ? safeSuggestions.map((s, i) => `${i + 1}. ${s}`).join("\n") : "Nenhuma"}
+
+Retorne somente a versão final revisada do currículo.`;
+}
+
+export async function refineResumeWithOpenAI(input, currentResumeText, suggestions) {
+  if (!currentResumeText || !currentResumeText.trim()) return null;
+  const prompt = buildRefinementPrompt(input, currentResumeText, suggestions);
+  return requestOpenAIResume(prompt, { temperature: 0.3, maxTokens: 2200 });
 }

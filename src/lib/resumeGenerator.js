@@ -1,7 +1,7 @@
 import { generateAndAnalyzeResume } from "./atsAnalyzer";
 
-export function generateResume(input) {
-  const { resumeText, analysis } = generateAndAnalyzeResume(input);
+export async function generateResume(input) {
+  const { resumeText, analysis } = await generateAndAnalyzeResume(input);
 
   return {
     text: resumeText,
