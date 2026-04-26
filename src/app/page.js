@@ -78,14 +78,17 @@ export default function Home() {
   const [analyzeLoading, setAnalyzeLoading] = useState(false);
   const [analyzeError, setAnalyzeError] = useState(null);
   const [analyzeResult, setAnalyzeResult] = useState(null);
+  const [optimizeLoading, setOptimizeLoading] = useState(false);
+  const [optimizeError, setOptimizeError] = useState(null);
+  const [optimizedResult, setOptimizedResult] = useState(null);
 
   const resultRef = useRef(null);
 
   useEffect(() => {
-    if ((result || analyzeResult) && resultRef.current) {
+    if ((result || analyzeResult || optimizedResult) && resultRef.current) {
       resultRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-  }, [result, analyzeResult]);
+  }, [result, analyzeResult, optimizedResult]);
 
   function stripMarkdownInline(s) {
     return String(s || "")
@@ -321,6 +324,8 @@ export default function Home() {
     e.preventDefault();
     setAnalyzeError(null);
     setAnalyzeResult(null);
+    setOptimizeError(null);
+    setOptimizedResult(null);
     const text = analyzeResumeText.trim();
     const jd = analyzeJobDesc.trim();
     if (!text || !jd) {
@@ -341,6 +346,32 @@ export default function Home() {
       setAnalyzeError(err.message);
     } finally {
       setAnalyzeLoading(false);
+    }
+  };
+
+  const handleOptimizeFromAnalyze = async () => {
+    setOptimizeError(null);
+    setOptimizedResult(null);
+    const text = analyzeResumeText.trim();
+    const jd = analyzeJobDesc.trim();
+    if (!text || !jd) {
+      setOptimizeError("Preencha o currículo e a descrição da vaga.");
+      return;
+    }
+    setOptimizeLoading(true);
+    try {
+      const res = await fetch("/api/optimize-resume", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resumeText: text, jobDescription: jd }),
+      });
+      const data = await readJsonFromApi(res);
+      if (!res.ok) throw new Error(data.error || "Falha ao otimizar currículo.");
+      setOptimizedResult(data);
+    } catch (err) {
+      setOptimizeError(err.message);
+    } finally {
+      setOptimizeLoading(false);
     }
   };
 
@@ -676,6 +707,41 @@ export default function Home() {
                 <div className="max-w-md">
                   <AnalysisBlock analysis={analyzeResult.analysis} />
                 </div>
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={handleOptimizeFromAnalyze}
+                    disabled={optimizeLoading}
+                    className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+                  >
+                    {optimizeLoading ? "Otimizando currículo…" : "Gerar currículo otimizado"}
+                  </button>
+                </div>
+                {optimizeError && (
+                  <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+                    {optimizeError}
+                  </div>
+                )}
+                {optimizedResult && (
+                  <section className="space-y-6 rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4 sm:p-6">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <h3 className="text-base font-semibold text-slate-900">
+                        Currículo otimizado
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => downloadResumePdf(optimizedResult.text)}
+                        className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50"
+                      >
+                        Download PDF
+                      </button>
+                    </div>
+                    <ResumeMarkdown>{optimizedResult.text}</ResumeMarkdown>
+                    <div className="max-w-md">
+                      <AnalysisBlock analysis={optimizedResult.analysis} />
+                    </div>
+                  </section>
+                )}
               </section>
             )}
           </>

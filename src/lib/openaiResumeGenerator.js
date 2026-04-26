@@ -165,3 +165,41 @@ export async function refineResumeWithOpenAI(input, currentResumeText, suggestio
   const prompt = buildRefinementPrompt(input, currentResumeText, suggestions);
   return requestOpenAIResume(prompt, { temperature: 0.3, maxTokens: 2200 });
 }
+
+function buildOptimizeFromExistingPrompt(resumeText, jobDescription) {
+  return `Você é um especialista em ATS e redação de currículos.
+Otimize o currículo abaixo para a vaga informada.
+
+FORMATO OBRIGATÓRIO (Markdown):
+1) Use \`##\` para seções principais em português.
+2) Em **Contato**, use linhas separadas com rótulos em negrito (ex.: **E-mail:** ...), sem lista.
+3) Em **Resumo profissional**, use parágrafo curto (sem bullets).
+4) Em **Experiência profissional**, use \`### Empresa — Cargo (período)\` e bullets para responsabilidades/resultados.
+5) Em **Formação acadêmica**, **Habilidades técnicas** e **Idiomas**, use bullets claros.
+6) Não use cercas de código (\`\`\`) nem tabelas.
+
+REGRAS:
+- Não invente dados pessoais, empresas, datas, cursos, certificações ou resultados.
+- Reorganize e reescreva apenas com base no conteúdo já presente no currículo.
+- Priorize palavras-chave e requisitos da vaga.
+- Texto em português.
+
+CURRÍCULO BASE:
+${resumeText || ""}
+
+DESCRIÇÃO DA VAGA:
+${jobDescription || ""}
+
+Retorne apenas o currículo final otimizado em Markdown.`;
+}
+
+export async function optimizeResumeFromExistingWithOpenAI(
+  resumeText,
+  jobDescription
+) {
+  if (!resumeText || !resumeText.trim() || !jobDescription || !jobDescription.trim()) {
+    return null;
+  }
+  const prompt = buildOptimizeFromExistingPrompt(resumeText, jobDescription);
+  return requestOpenAIResume(prompt, { temperature: 0.35, maxTokens: 2400 });
+}
