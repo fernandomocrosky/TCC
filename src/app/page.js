@@ -295,7 +295,7 @@ export default function Home() {
     <div className="min-h-screen bg-slate-100">
       {/* Navegação */}
       <header className="border-b border-slate-200 bg-white shadow-sm">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
+        <div className="mx-auto flex max-w-4xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <div className="min-w-0 flex-1">
             <span className="block text-lg font-bold leading-tight text-slate-900">
               CVForge
@@ -305,11 +305,11 @@ export default function Home() {
               artificial
             </p>
           </div>
-          <nav className="flex shrink-0 gap-1 rounded-lg bg-slate-100 p-1">
+          <nav className="flex w-full gap-1 overflow-x-auto rounded-lg bg-slate-100 p-1 sm:w-auto sm:shrink-0">
             <button
               type="button"
               onClick={() => setTab("gerar")}
-              className={`rounded-md px-4 py-2 text-sm font-medium transition ${
+              className={`whitespace-nowrap rounded-md px-3 py-2 text-xs font-medium transition sm:px-4 sm:text-sm ${
                 tab === "gerar"
                   ? "bg-white text-slate-900 shadow"
                   : "text-slate-600 hover:text-slate-900"
@@ -320,7 +320,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setTab("analisar")}
-              className={`rounded-md px-4 py-2 text-sm font-medium transition ${
+              className={`whitespace-nowrap rounded-md px-3 py-2 text-xs font-medium transition sm:px-4 sm:text-sm ${
                 tab === "analisar"
                   ? "bg-white text-slate-900 shadow"
                   : "text-slate-600 hover:text-slate-900"
@@ -331,7 +331,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setTab("feedback")}
-              className={`rounded-md px-4 py-2 text-sm font-medium transition ${
+              className={`whitespace-nowrap rounded-md px-3 py-2 text-xs font-medium transition sm:px-4 sm:text-sm ${
                 tab === "feedback"
                   ? "bg-white text-slate-900 shadow"
                   : "text-slate-600 hover:text-slate-900"
@@ -630,7 +630,7 @@ export default function Home() {
 
         {tab === "feedback" && (
           <>
-            <div className="mb-6 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-cyan-50 p-6 shadow-sm">
+            <div className="mb-6 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-cyan-50 p-4 shadow-sm sm:p-6">
               <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-3 py-1 text-xs font-medium text-indigo-700">
                 <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
                 CVForge Feedback
@@ -642,7 +642,7 @@ export default function Home() {
             </div>
 
             <section className={`${cardClass} p-4 sm:p-6`}>
-              <div className="mb-3 flex items-center justify-between">
+              <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <h2 className="text-sm font-semibold text-slate-700 sm:text-base">
                   Formulário de feedback
                 </h2>
@@ -652,7 +652,7 @@ export default function Home() {
                 <iframe
                   src="https://docs.google.com/forms/d/e/1FAIpQLSft_OEdoR5QoD72SvpxyI2CtVdFHgEh4DO8jh6wYuKfIJhHRA/viewform?embedded=true"
                   width="100%"
-                  height="1269"
+                  className="h-[72vh] min-h-[520px] sm:h-[920px] lg:h-[1269px]"
                   frameBorder="0"
                   marginHeight="0"
                   marginWidth="0"
