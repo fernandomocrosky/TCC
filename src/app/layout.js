@@ -12,10 +12,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title:
-    "CVForge: Uma aplicação para criação de currículos personalizados com inteligência artificial",
+  title: "CVForge — TCC · currículo com IA e texto da vaga",
   description:
-    "CVForge gera currículos personalizados com IA, importa PDF e analisa aderência à vaga (ATS).",
+    "O CVForge é o TCC em forma de site: gere currículo com inteligência artificial usando o anúncio da vaga, importe PDF e use análise com nota e sugestões.",
 };
 
 export default function RootLayout({ children }) {

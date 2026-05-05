@@ -55,8 +55,11 @@ async function readJsonFromApi(res) {
   }
 }
 
+const INTRO_SESSION_KEY = "cvforge-intro-dismissed";
+
 export default function Home() {
   const [tab, setTab] = useState("gerar"); // "gerar" | "analisar" | "feedback"
+  const [showPlatformIntro, setShowPlatformIntro] = useState(true);
 
   // Estado do fluxo "Gerar currículo"
   const [candidate, setCandidate] = useState(emptyCandidate());
@@ -83,6 +86,32 @@ export default function Home() {
   const [optimizedResult, setOptimizedResult] = useState(null);
 
   const resultRef = useRef(null);
+
+  useEffect(() => {
+    try {
+      if (typeof sessionStorage !== "undefined" && sessionStorage.getItem(INTRO_SESSION_KEY)) {
+        setShowPlatformIntro(false);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const dismissIntro = () => {
+    try {
+      if (typeof sessionStorage !== "undefined") {
+        sessionStorage.setItem(INTRO_SESSION_KEY, "1");
+      }
+    } catch {
+      /* ignore */
+    }
+    setShowPlatformIntro(false);
+  };
+
+  const goToTab = (next) => {
+    dismissIntro();
+    setTab(next);
+  };
 
   useEffect(() => {
     if ((result || analyzeResult || optimizedResult) && resultRef.current) {
@@ -385,14 +414,13 @@ export default function Home() {
               CVForge
             </span>
             <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-slate-500 sm:line-clamp-none sm:max-w-xl sm:text-xs">
-              Uma aplicação para criação de currículos personalizados com inteligência
-              artificial
+              Trabalho de Conclusão de Curso (TCC): currículo com inteligência artificial usando o texto do anúncio da vaga.
             </p>
           </div>
           <nav className="flex w-full gap-1 overflow-x-auto rounded-lg bg-slate-100 p-1 sm:w-auto sm:shrink-0">
             <button
               type="button"
-              onClick={() => setTab("gerar")}
+              onClick={() => goToTab("gerar")}
               className={`whitespace-nowrap rounded-md px-3 py-2 text-xs font-medium transition sm:px-4 sm:text-sm ${
                 tab === "gerar"
                   ? "bg-white text-slate-900 shadow"
@@ -403,7 +431,7 @@ export default function Home() {
             </button>
             <button
               type="button"
-              onClick={() => setTab("analisar")}
+              onClick={() => goToTab("analisar")}
               className={`whitespace-nowrap rounded-md px-3 py-2 text-xs font-medium transition sm:px-4 sm:text-sm ${
                 tab === "analisar"
                   ? "bg-white text-slate-900 shadow"
@@ -414,7 +442,7 @@ export default function Home() {
             </button>
             <button
               type="button"
-              onClick={() => setTab("feedback")}
+              onClick={() => goToTab("feedback")}
               className={`whitespace-nowrap rounded-md px-3 py-2 text-xs font-medium transition sm:px-4 sm:text-sm ${
                 tab === "feedback"
                   ? "bg-white text-slate-900 shadow"
@@ -428,15 +456,112 @@ export default function Home() {
       </header>
 
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
-        {tab === "gerar" && (
+        {showPlatformIntro && (
+          <section
+            className={`${cardClass} mb-10 border-indigo-100 bg-gradient-to-b from-white to-indigo-50/40 p-5 sm:p-6`}
+            aria-labelledby="intro-heading"
+          >
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-indigo-600">
+              Introdução
+            </p>
+            <h1 id="intro-heading" className="text-xl font-bold text-slate-900 sm:text-2xl">
+              Bem-vindo ao CVForge
+            </h1>
+            <div className="mt-3 space-y-3 text-sm leading-relaxed text-slate-600 sm:text-[15px]">
+              <p>
+                O <strong className="font-semibold text-slate-800">CVForge é o TCC</strong> (Trabalho de Conclusão de Curso) na forma deste site — algo que você pode abrir no celular ou no computador. A ideia é ajudar quem está buscando emprego a montar um{" "}
+                <strong className="font-semibold text-slate-800">currículo voltado para uma vaga de verdade</strong>, e não um texto genérico.
+              </p>
+              <p>
+                Você preenche seus dados (quem você é, onde trabalhou, formação, contato) e{" "}
+                <strong className="font-semibold text-slate-800">cola o texto completo do anúncio</strong>. A partir disso, a{" "}
+                <strong className="font-semibold text-slate-800">inteligência artificial</strong> integrada aqui redige o currículo em português e mostra uma <strong className="font-semibold text-slate-800">nota com sugestões</strong>, para você ver se o texto está alinhado com o que a empresa pediu.
+              </p>
+            </div>
+
+            <h2 className="mb-2 mt-6 text-sm font-semibold text-slate-900">O que cada parte faz</h2>
+            <div className="space-y-3 text-sm leading-relaxed text-slate-600">
+              <div className="rounded-xl border border-slate-200 bg-white/90 p-4">
+                <p className="font-semibold text-slate-900">Gerar currículo</p>
+                <p className="mt-1.5">
+                  É o fluxo principal: você preenche o formulário com seus dados, cola o anúncio no campo indicado e gera o texto. Se você já tiver um currículo em PDF, pode enviar para o site tentar copiar nome, contatos e alguns dados. No resultado, dá para <strong className="font-medium text-slate-700">baixar o currículo em PDF</strong>.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => goToTab("gerar")}
+                  className="mt-3 w-full rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-800 transition hover:bg-indigo-100 sm:w-auto"
+                >
+                  Ir para Gerar currículo
+                </button>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white/90 p-4">
+                <p className="font-semibold text-slate-900">Analisar currículo</p>
+                <p className="mt-1.5">
+                  Para quem já escreveu o currículo e quer saber se combina com uma vaga. Você cola o texto (ou envia PDF) e o anúncio; aparecem uma <strong className="font-medium text-slate-700">nota</strong> e uma lista de <strong className="font-medium text-slate-700">sugestões</strong>. Se quiser, pode pedir uma nova versão do currículo já ajustada àquela vaga.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => goToTab("analisar")}
+                  className="mt-3 w-full rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-800 transition hover:bg-indigo-100 sm:w-auto"
+                >
+                  Ir para Analisar currículo
+                </button>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white/90 p-4">
+                <p className="font-semibold text-slate-900">Feedback</p>
+                <p className="mt-1.5">
+                  Um <strong className="font-medium text-slate-700">formulário opcional</strong> com perguntas curtas sobre como foi usar o CVForge.{" "}
+                  <strong className="font-semibold text-slate-800">Responder ajuda diretamente o TCC:</strong> suas respostas viram insumo para avaliar a solução, embasar a discussão no relatório e registrar a opinião de quem testou. Não há certo ou errado.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => goToTab("feedback")}
+                  className="mt-3 w-full rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-800 transition hover:bg-indigo-100 sm:w-auto"
+                >
+                  Ir para Feedback
+                </button>
+              </div>
+            </div>
+
+            <p className="mt-4 text-sm text-slate-500">
+              No <strong className="font-medium text-slate-600">topo da tela</strong> há três botões — Gerar, Analisar e Feedback — para trocar de área quando quiser. Se puder, use também o Feedback:{" "}
+              <strong className="font-medium text-slate-600">as respostas auxiliam o TCC</strong> na avaliação do trabalho e na escrita do relatório.
+            </p>
+            <div className="mt-5 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => goToTab("gerar")}
+                className="rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              >
+                Começar: gerar currículo
+              </button>
+              <button
+                type="button"
+                onClick={() => goToTab("analisar")}
+                className="rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+              >
+                Ir para analisar currículo
+              </button>
+              <button
+                type="button"
+                onClick={() => goToTab("feedback")}
+                className="rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+              >
+                Ir para Feedback
+              </button>
+            </div>
+          </section>
+        )}
+
+        {!showPlatformIntro && tab === "gerar" && (
           <>
             <div className="mb-8">
               <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
                 Gerar currículo
               </h1>
               <p className="mt-1 text-slate-600">
-                Preencha seus dados e a descrição da vaga para gerar um currículo
-                personalizado e ver a análise ATS.
+                Preencha seus dados e cole o texto do anúncio da vaga para gerar um
+                currículo personalizado e ver uma nota com sugestões de melhoria.
               </p>
             </div>
 
@@ -604,7 +729,7 @@ export default function Home() {
                   disabled={loading}
                   className="rounded-xl bg-indigo-600 px-8 py-3.5 text-base font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
                 >
-                  {loading ? "Gerando…" : "Gerar currículo e análise ATS"}
+                  {loading ? "Gerando…" : "Gerar currículo e ver sugestões"}
                 </button>
               </div>
             </form>
@@ -627,7 +752,7 @@ export default function Home() {
                     <ResumeMarkdown>{result.text}</ResumeMarkdown>
                   </div>
                   <div className="flex shrink-0 flex-col gap-4 lg:w-[300px]">
-                    <h3 className="text-sm font-semibold text-slate-700">Análise ATS</h3>
+                    <h3 className="text-sm font-semibold text-slate-700">Nota e sugestões</h3>
                     <AnalysisBlock analysis={result.analysis} />
                   </div>
                 </div>
@@ -636,15 +761,15 @@ export default function Home() {
           </>
         )}
 
-        {tab === "analisar" && (
+        {!showPlatformIntro && tab === "analisar" && (
           <>
             <div className="mb-8">
               <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">
                 Analisar currículo
               </h1>
               <p className="mt-1 text-slate-600">
-                Envie um currículo (PDF ou texto) e a descrição da vaga para
-                obter a pontuação ATS e sugestões de melhoria.
+                Envie um currículo (PDF ou texto) e o texto do anúncio da vaga para
+                ver uma nota e sugestões de melhoria.
               </p>
             </div>
 
@@ -747,46 +872,57 @@ export default function Home() {
           </>
         )}
 
-        {tab === "feedback" && (
+        {!showPlatformIntro && tab === "feedback" && (
           <>
             <div className="mb-6 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-cyan-50 p-4 shadow-sm sm:p-6">
               <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-3 py-1 text-xs font-medium text-indigo-700">
                 <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
-                CVForge Feedback
+                CVForge · TCC
               </div>
               <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">Feedback</h1>
-              <p className="mt-1 text-sm text-slate-600 sm:text-base">
-                Responda o formulário abaixo.
+              <p className="mt-2 space-y-2 text-sm leading-relaxed text-slate-600 sm:text-base">
+                <span className="block">
+                  <strong className="font-semibold text-slate-800">O que você responder aqui auxilia o TCC:</strong> o CVForge é o trabalho de conclusão, e o formulário coleta impressões reais de uso — isso entra como evidência na avaliação da solução e na redação do relatório acadêmico.
+                </span>
+                <span className="block">
+                  São perguntas rápidas sobre como foi navegar no site. Obrigado por dedicar um minuto; cada resposta conta para fechar o TCC com qualidade.
+                </span>
               </p>
             </div>
 
             <section className={`${cardClass} p-4 sm:p-6`}>
               <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                <h2 className="text-sm font-semibold text-slate-700 sm:text-base">
-                  Formulário de feedback
-                </h2>
-                <span className="text-xs text-slate-500">Leva menos de 2 minutos</span>
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-700 sm:text-base">
+                    Formulário de feedback
+                  </h2>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    Respostas usadas para <strong className="font-medium text-slate-600">apoiar a avaliação e o relatório do TCC</strong>.
+                  </p>
+                </div>
+                <span className="shrink-0 text-xs text-slate-500">Leva menos de 2 minutos</span>
               </div>
               <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-inner">
                 <iframe
                   src="https://docs.google.com/forms/d/e/1FAIpQLSft_OEdoR5QoD72SvpxyI2CtVdFHgEh4DO8jh6wYuKfIJhHRA/viewform?embedded=true"
-                  width="100%"
-                  className="h-[72vh] min-h-[520px] sm:h-[920px] lg:h-[1269px]"
+                  width={640}
+                  height={1269}
+                  className="mx-auto block h-[1269px] w-full max-w-[640px] border-0"
                   frameBorder="0"
-                  marginHeight="0"
-                  marginWidth="0"
+                  marginHeight={0}
+                  marginWidth={0}
                   title="Formulário de feedback do CVForge"
                 >
-                  Carregando...
+                  Carregando…
                 </iframe>
               </div>
             </section>
           </>
         )}
 
-        <footer className="mt-16 border-t border-slate-200 pt-6 text-center text-xs text-slate-500">
-          CVForge: Uma aplicação para criação de currículos personalizados com inteligência
-          artificial · Next.js e Tailwind CSS
+        <footer className="mt-16 border-t border-slate-200 pt-6 text-center text-xs leading-relaxed text-slate-500">
+          CVForge — Trabalho de Conclusão de Curso (TCC). Currículos com inteligência artificial a partir do texto do anúncio da vaga.
+          <span className="mt-1 block text-[11px] text-slate-400">Next.js · Tailwind CSS</span>
         </footer>
       </main>
     </div>
